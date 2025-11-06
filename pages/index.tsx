@@ -2,44 +2,37 @@ import { useState } from 'react';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('카페 로얄티 카드, 귀여운 스타일');
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
 
-  const generate = async () => {
-    setLoading(true);
-    try {
-      // 임시: 플레이스홀더 이미지 (Replicate API 나중에)
-      setImageUrl('https://via.placeholder.com/300x300/FF6B6B/FFFFFF?text=Nifty+NFT');
-      alert('AI 생성 완료! (실제 API 연결 시 이미지 로드)');
-    } catch (err) {
-      alert('생성 에러');
-    }
-    setLoading(false);
+  const generate = () => {
+    setImage('https://picsum.photos/400/400?random=' + Date.now());
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ textAlign: 'center' }}>Nifty MVP Demo</h1>
-      <p style={{ textAlign: 'center', color: '#666' }}>AI로 1분 NFT 로얄티 카드 만들기</p>
+    <div style={{ padding: '3rem', fontFamily: 'system-ui', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+      <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Nifty MVP</h1>
+      <p style={{ color: '#666', marginBottom: '2rem' }}>AI로 1분 만에 단골 NFT 만들기</p>
 
       <input
         value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="프롬프트 입력 (e.g., 미용실 멤버십 카드)"
-        style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}
+        onChange={e => setPrompt(e.target.value)}
+        style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', borderRadius: '8px', border: '2px solid #ddd', marginBottom: '1rem' }}
+        placeholder="프롬프트 입력"
       />
-      <button 
-        onClick={generate} 
-        disabled={loading}
-        style={{ width: '100%', padding: '0.75rem', background: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', marginBottom: '1rem' }}
+
+      <button
+        onClick={generate}
+        style={{ width: '100%', padding: '1rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.2rem', cursor: 'pointer' }}
       >
-        {loading ? 'AI 생성 중...' : 'AI 이미지 생성'}
+        AI 이미지 생성
       </button>
 
-      {imageUrl && (
-        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <img src={imageUrl} alt="AI 생성 NFT" style={{ maxWidth: '300px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }} />
-          <p>민팅 버튼은 다음 업데이트에서! (지금은 플레이스홀더)</p>
+      {image && (
+        <div style={{ marginTop: '2rem' }}>
+          <img src={image} alt="NFT" style={{ borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }} />
+          <p style={{ marginTop: '1rem', fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>
+            민팅 준비 완료! (다음 단계에서 연결)
+          </p>
         </div>
       )}
     </div>
