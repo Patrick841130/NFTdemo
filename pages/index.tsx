@@ -70,7 +70,9 @@ export default function Home() {
 
       // 이미지 URL을 그대로 tokenURI로 넣는다 (나중에 IPFS로 교체)
       const tx = await contract.safeMint(userAddress, image);
-      const receipt = await tx.wait();
+      setTxHash(tx.hash); // 일단 사용자에게 해시 보여주기
+      // 뒤에서 기다리게 하거나, 안 기다려도 됨
+
 
       setTxHash(receipt.hash);
       alert('민팅 성공!');
