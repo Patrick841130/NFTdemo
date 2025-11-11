@@ -32,10 +32,10 @@ export default function Home() {
     setLoading(true);
     try {
       // 지갑 연결
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
 
       // ethers v6 스타일
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
 
       // 👉 여기 네가 Amoy에 방금 배포한 컨트랙트 주소
