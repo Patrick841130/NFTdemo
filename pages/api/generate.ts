@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         Accept: "image/png",
       },
       body: JSON.stringify({
-        model: "stabilityai/stable-diffusion-2-1", // 무료 공개 모델
+        model: "stabilityai/stable-diffusion-3-medium",
         inputs: prompt,
       }),
     });
