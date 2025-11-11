@@ -1,5 +1,6 @@
 // pages/api/generate.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import { InferenceClient } from "@huggingface/inference";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -17,33 +18,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await fetch("https://router.huggingface.co/hf-inference", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        // 이걸 넣어야 바이너리 이미지로 바로 온다
-        Accept: "image/png",
+    const client = new InferenceClient(token);
+
+    // 👉 네가 캡처한 그 코드 그대로
+    const imageBlob = await client.textToImage({
+      provider: "fal-ai",
+      model: "stabilityai/stable-diffusion-3.5-medium",
+      inputs: prompt,
+      parameters: {
+        num_inference_steps: 5,
       },
-      body: JSON.stringify({
-        // 👇 네가 캡처한 모델 이름
-        model: "stabilityai/stable-diffusion-3.5-medium",
-        // 👇 이 모델은 provider를 지정해야 한다
-        provider: "fal-ai",
-        inputs: prompt,
-        // 옵션도 캡처에 있던 그대로 넣어줄 수 있음
-        parameters: {
-          num_inference_steps: 5,
-        },
-      }),
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      return res.status(response.status).json({ error: err });
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
+    // Blob -> base64
+    const arrayBuffer = await imageBlob.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const imageUrl = `data:image/png;base64,${base64}`;
 
