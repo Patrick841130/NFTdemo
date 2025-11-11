@@ -1,20 +1,26 @@
-// pages/api/generate.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   const { prompt } = req.body;
-  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+  if (!prompt) return res.status(400).json({ error: "prompt required" });
+
+  const token = process.env.HF_TOKEN;
+  if (!token) return res.status(500).json({ error: "HF_TOKEN missing" });
 
   try {
-    const response = await fetch('https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5', {
+    const response = await fetch("https://router.huggingface.co/hf-inference", {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.HF_TOKEN}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "image/png",
       },
-      method: 'POST',
-      body: JSON.stringify({ inputs: prompt }),
+      body: JSON.stringify({
+        model: "stabilityai/stable-diffusion-2-1", // 무료 공개 모델
+        inputs: prompt,
+      }),
     });
 
     if (!response.ok) {
@@ -23,12 +29,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
-    const imageUrl = `data:image/png;base64,${base64Image}`;
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const imageUrl = `data:image/png;base64,${base64}`;
 
     res.status(200).json({ imageUrl });
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Image generation failed' });
+    res.status(500).json({ error: err.message || "image generation failed" });
   }
 }
