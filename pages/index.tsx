@@ -9,15 +9,25 @@ function getMetaMaskProvider(): any {
   // 여러 provider가 주입된 경우
   if (w.ethereum && Array.isArray(w.ethereum.providers)) {
     const mm = w.ethereum.providers.find((p: any) => p.isMetaMask);
-    if (mm) return mm;
     return w.ethereum.providers[0];
   }
 
   // 하나만 있는 경우
   if (w.ethereum) return w.ethereum;
-
   return null;
 }
+//  한글도 되는 base64 인코더
+function toBase64Json(obj: any): string {
+  // 1) JSON으로 만들고
+  const json = JSON.stringify(obj);
+  // 2) UTF-8로 먼저 바꾼 다음
+  const utf8 = new TextEncoder().encode(json);
+  // 3) 그걸 base64로 변환
+  let binary = '';
+  utf8.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary);
+}
+
 
 export default function Home() {
   const [prompt, setPrompt] = useState('카페 로얄티 카드, 귀여운 스타일');
@@ -82,8 +92,7 @@ export default function Home() {
         description: `Generated from prompt: ${prompt}`,
         image: image, // 실제 생성된 이미지 URL
       };
-      const tokenURI =
-        'data:application/json;base64,' + btoa(JSON.stringify(metadata));
+      const tokenURI = 'data:application/json;base64,' + toBase64Json(metadata);
 
       // 4) 컨트랙트 세팅
       const contractAddress = '0xada5b4b0f2446f3f8532c309c0de222821ef572d';
