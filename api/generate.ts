@@ -1,16 +1,27 @@
 // api/generate.ts
 
-// ❌ import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'POST only' });
+  // 공통 CORS 헤더 (동일 출처라도 OPTIONS 대비)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // 1) 프리플라이트 허용
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end(); // no body
   }
 
-  // body가 string으로 올 수도 있으니 안전하게 파싱
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-  const { prompt } = body as { prompt?: string };
+  // 2) POST 이외 거부하되 항상 JSON 바디 주기
+  if (req.method !== 'POST') {
+    return res
+      .status(405)
+      .json({ error: 'POST only', received: req.method || 'UNKNOWN' });
+  }
 
+  // 3) body 안전 파싱
+  const body =
+    typeof req.body === 'string' ? safeParse(req.body) : (req.body || {});
+  const prompt = body?.prompt;
   if (!prompt) {
     return res.status(400).json({ error: 'prompt required' });
   }
@@ -38,12 +49,11 @@ export default async function handler(req: any, res: any) {
 
     if (!resp.ok) {
       const text = await resp.text();
-      return res.status(resp.status).json({ detail: text });
+      return res.status(resp.status).json({ detail: text || 'upstream error' });
     }
 
     const result = await resp.json();
     const imageUrl = result.data?.[0]?.url || result.data?.[0];
-
     if (!imageUrl) {
       return res.status(500).json({ detail: 'no image in response' });
     }
@@ -51,6 +61,16 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ imageUrl });
   } catch (err: any) {
     console.error(err);
-    return res.status(500).json({ detail: err.message ?? 'fetch failed' });
+    return res
+      .status(500)
+      .json({ detail: err?.message ?? 'fetch failed (server)' });
+  }
+}
+
+function safeParse(s: string) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
   }
 }
