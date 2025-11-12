@@ -18,20 +18,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // SDK 클라이언트 생성
     const hf = new HfInference(token);
 
-    // 네가 캡처한 모델 + provider 값 그대로
-    const imgBlob = await hf.textToImage({
+    // 타입이 provider를 아직 모르는 버전이라 any로 우회
+    const imgBlob = await (hf as any).textToImage({
       model: "stabilityai/stable-diffusion-3.5-medium",
-      provider: "fal-ai",
+      provider: "fal-ai",              // <- 네가 UI에서 본 그 값
       inputs: prompt,
       parameters: {
         num_inference_steps: 5,
       },
     });
 
-    // Blob → base64
     const arrayBuffer = await imgBlob.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const imageUrl = `data:image/png;base64,${base64}`;
