@@ -1,36 +1,37 @@
 // api/generate.ts
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+// ❌ import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { prompt } = req.body as { prompt?: string };
+  // body가 string으로 올 수도 있으니 안전하게 파싱
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+  const { prompt } = body as { prompt?: string };
+
   if (!prompt) {
     return res.status(400).json({ error: 'prompt required' });
   }
 
   try {
-    // 너가 API docs에서 본 Space 엔드포인트
     const spaceUrl =
       'https://stabilityai-stable-diffusion-3-5-medium.hf.space/run/infer';
 
     const resp = await fetch(spaceUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         data: [
           prompt, // prompt
-          '', // negative_prompt
-          0, // seed
-          true, // randomize_seed
-          1024, // width
-          1024, // height
-          4.5, // guidance_scale
-          40, // num_inference_steps
+          '',     // negative_prompt
+          0,      // seed
+          true,   // randomize_seed
+          1024,   // width
+          1024,   // height
+          4.5,    // guidance_scale
+          40      // num_inference_steps
         ],
       }),
     });
