@@ -1,6 +1,6 @@
 // pages/api/generate.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { InferenceClient } from "@huggingface/inference";
+import { HfInference } from "@huggingface/inference";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -18,20 +18,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const client = new InferenceClient(token);
+    // SDK 클라이언트 생성
+    const hf = new HfInference(token);
 
-    // 👉 네가 캡처한 그 코드 그대로
-    const imageBlob = await client.textToImage({
-      provider: "fal-ai",
+    // 네가 캡처한 모델 + provider 값 그대로
+    const imgBlob = await hf.textToImage({
       model: "stabilityai/stable-diffusion-3.5-medium",
+      provider: "fal-ai",
       inputs: prompt,
       parameters: {
         num_inference_steps: 5,
       },
     });
 
-    // Blob -> base64
-    const arrayBuffer = await imageBlob.arrayBuffer();
+    // Blob → base64
+    const arrayBuffer = await imgBlob.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const imageUrl = `data:image/png;base64,${base64}`;
 
