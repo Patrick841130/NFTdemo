@@ -28,32 +28,52 @@ function toBase64Json(obj: any): string {
   return btoa(binary);
 }
 
-
 export default function Home() {
   const [prompt, setPrompt] = useState('카페 로얄티 카드, 귀여운 스타일');
   const [image, setImage] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 1) AI 이미지 생성 (지금은 /api/generate → Replicate)
+  // 1) AI 이미지 생성 (/api/generate 호출)
   const generate = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: JSON.stringify({ prompt }),
       });
-      const data = await res.json();
-      if (data.imageUrl) {
+
+      // ❗️항상 먼저 문자열로 받고 → 가능하면 JSON 파싱
+      const raw = await res.text();
+      let data: any = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok) {
+        const msg =
+          (data && (data.error || data.detail)) ||
+          raw ||
+          `HTTP ${res.status}`;
+        alert('이미지 생성 실패: ' + msg);
+        return;
+      }
+
+      if (data?.imageUrl) {
         setImage(data.imageUrl);
         setTxHash(null);
       } else {
-        alert('이미지 생성 실패: ' + (data.error ?? 'unknown'));
+        alert('이미지 생성 실패: 응답에 imageUrl이 없습니다.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('이미지 생성 중 오류가 발생했습니다.');
+      alert('이미지 생성 중 오류가 발생했습니다: ' + (e?.message ?? e));
     } finally {
       setLoading(false);
     }
