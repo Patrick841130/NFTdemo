@@ -111,76 +111,54 @@ export default function Home() {
   }
 
   // 2) 실제 민팅
-  const mintNFT = async () => {
-    if (!image) {
-      alert('먼저 이미지를 생성해주세요!');
-      return;
-    }
+  setLoading(true);
+  try {
+    // 1️⃣ IPFS 업로드
+   const uploadResp = await fetch('/api/ipfs-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'image.png',
+        data: image.replace(/^data:image\/\w+;base64,/, ''), // base64 헤더 제거
+        contentType: 'image/png',
+      }),
+    });
+    const { url: imageUrl } = await uploadResp.json();
 
-    const ethereum = getMetaMaskProvider();
-    if (!ethereum) {
-      alert('MetaMask가 필요합니다. 다른 지갑 확장자가 켜져 있으면 잠깐 꺼주세요.');
-      return;
-    }
+    // 2️⃣ 메타데이터 JSON 생성 후 다시 IPFS 업로드
+    const metadata = {
+      name: 'AI NFT',
+      description: `Generated from prompt: ${prompt}`,
+      image: imageUrl,
+    };
+    const metaResp = await fetch('/api/ipfs-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'metadata.json',
+        data: JSON.stringify(metadata),
+        contentType: 'application/json',
+      }),
+    });
+    const { url: tokenURI } = await metaResp.json();
 
-    setLoading(true);
-    try {
-      // 1) 지갑 연결을 10초 타임아웃으로 감싼다 (확장자가 멈출 때 대비)
-      await Promise.race([
-        ethereum.request({ method: 'eth_requestAccounts' }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('지갑 응답이 없습니다. 다시 시도해주세요.')), 10000)
-        ),
-      ]);
+    // 3️⃣ 이제 컨트랙트에 tokenURI로 민팅
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+    const userAddress = await signer.getAddress();
+    const tx = await contract.safeMint(userAddress, tokenURI);
 
-      // 2) provider / signer
-      const provider = new ethers.BrowserProvider(ethereum);
-      const signer = await provider.getSigner();
-
-      // 3) 메타데이터(JSON) → base64 → data:application/json 으로 감싸기
-      const metadata = {
-        name: `AI NFT ${Date.now()}`,
-        description: `Generated from prompt: ${prompt}`,
-        image: image, // 실제 생성된 이미지 URL
-      };
-      const tokenURI = 'data:application/json;base64,' + toBase64Json(metadata);
-
-      // 4) 컨트랙트 세팅
-      const contractAddress = '0xada5b4b0f2446f3f8532c309c0de222821ef572d';
-      const abi = ['function safeMint(address to, string memory uri) public'];
-      const contract = new ethers.Contract(contractAddress, abi, signer);
-
-      const userAddress = await signer.getAddress();
-
-      // 5) 민팅 트랜잭션 보내기
-      const tx = await contract.safeMint(userAddress, tokenURI);
-      // 먼저 해시를 보여주자
-      setTxHash(tx.hash);
-
-      // 6) 블록 포함 대기 (20초 이상 기다리지 않게)
-      await Promise.race([
-        tx.wait(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  '트랜잭션이 아직 블록에 포함되지 않았습니다. 나중에 Polygonscan에서 해시로 확인해주세요.'
-                )
-              ),
-            20000
-          )
-        ),
-      ]);
-
-      alert('민팅 성공!');
-    } catch (err: any) {
-      console.error(err);
-      alert('민팅 실패: ' + (err?.message ?? err));
-    } finally {
-      setLoading(false);
-    }
-  };
+    setTxHash(tx.hash);
+    await tx.wait();
+    alert('민팅 성공!');
+  } catch (err) {
+    console.error(err);
+    alert('민팅 실패');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
