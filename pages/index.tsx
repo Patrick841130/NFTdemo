@@ -114,33 +114,22 @@ export default function Home() {
   setLoading(true);
   try {
     // 1️⃣ IPFS 업로드
-   const uploadResp = await fetch('/api/ipfs-upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'image.png',
-        data: image.replace(/^data:image\/\w+;base64,/, ''), // base64 헤더 제거
-        contentType: 'image/png',
-      }),
-    });
-    const { url: imageUrl } = await uploadResp.json();
-
-    // 2️⃣ 메타데이터 JSON 생성 후 다시 IPFS 업로드
-    const metadata = {
-      name: 'AI NFT',
+   // 2) 이미지를 IPFS에 올리고 tokenURI 받기
+  const up = await fetch('/api/ipfs-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageUrl: image,                           // data URL 또는 http URL 모두 지원
+      name: `AI NFT ${Date.now()}`,
       description: `Generated from prompt: ${prompt}`,
-      image: imageUrl,
-    };
-    const metaResp = await fetch('/api/ipfs-upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'metadata.json',
-        data: JSON.stringify(metadata),
-        contentType: 'application/json',
-      }),
-    });
-    const { url: tokenURI } = await metaResp.json();
+    }),
+  });
+  const upJson = await up.json();
+  if (!up.ok || !upJson?.tokenURI) {
+    throw new Error('IPFS 업로드 실패: ' + (upJson?.error || up.status));
+  }
+  const tokenURI = upJson.tokenURI; // ← 이걸 safeMint에 그대로 넣기
+
 
     // 3️⃣ 이제 컨트랙트에 tokenURI로 민팅
     const provider = new ethers.BrowserProvider(ethereum);
